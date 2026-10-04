@@ -40,6 +40,31 @@ const dashApp = path.join(appRoot, 'app')
 const dashPublic = path.join(appRoot, 'public')
 const dashMiddleware = path.join(appRoot, 'middleware.ts')
 
+function rewriteRootComponentImports() {
+  // Moving apps/dashboard/app → root/app shortens path depth for legacy
+  // relative imports that climbed five levels to monorepo root components/.
+  const rootComponentImportFiles = [
+    'dashboard/decisions/page.tsx',
+    'dashboard/deals/page.tsx',
+    'dashboard/contacts/page.tsx',
+    'dashboard/compliance/page.tsx',
+    'dashboard/collaboration/page.tsx',
+  ]
+  for (const rel of rootComponentImportFiles) {
+    const file = path.join(rootApp, rel)
+    if (!fs.existsSync(file)) continue
+    const source = fs.readFileSync(file, 'utf8')
+    const rewritten = source.replace(
+      /(['"])\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/components\//g,
+      '$1@/components/',
+    )
+    if (rewritten !== source) {
+      fs.writeFileSync(file, rewritten)
+      console.log(`[vercel-build] rewrote root imports in app/${rel}`)
+    }
+  }
+}
+
 function ensureRootNextSurface() {
   const marker = path.join(rootApp, 'ai-studio')
   const middlewareProxyConflict =
@@ -54,6 +79,7 @@ function ensureRootNextSurface() {
 
   if (alreadyReady) {
     console.log('[vercel-build] root Next surface already present')
+    rewriteRootComponentImports()
     return
   }
 
@@ -95,6 +121,7 @@ function ensureRootNextSurface() {
     rootConfig,
     "export { default } from './apps/dashboard/next.config.mjs'\n",
   )
+  rewriteRootComponentImports()
   console.log('[vercel-build] wrote next.config.mjs and flattened app/')
 }
 
