@@ -1,10 +1,9 @@
 /**
  * Vercel build entrypoint for monorepo-root Next.js deploys.
  *
- * The deploy bundle copies apps/dashboard/{app,public,middleware} to the upload
- * root and writes a root next.config.mjs. Build must run at that root so `.next`
- * is created in-place — mirroring apps/dashboard/.next broke Vercel packaging
- * (ENOENT /node_modules/client-only).
+ * Git-integrated Vercel uploads the monorepo without a pre-flattened root.
+ * When root next.config.mjs / full app/ are missing, prepare them from
+ * apps/dashboard, then build at the monorepo root so `.next` is in-place.
  */
 const { spawnSync } = require('node:child_process')
 const fs = require('node:fs')
@@ -27,14 +26,54 @@ setDefault('NEXT_BUILD_TRIAGE_DISABLE_OUTPUT_FILE_TRACING', '1')
 setDefault('VERCEL_ALLOW_WEBPACK_FALLBACK', '0')
 setDefault('NODE_OPTIONS', '--max-old-space-size=3584')
 
-
 const appRoot = path.resolve(__dirname, '..')
 const monorepoRoot = path.resolve(appRoot, '../..')
 
 const rootApp = path.join(monorepoRoot, 'app')
 const rootConfig = path.join(monorepoRoot, 'next.config.mjs')
+const rootPublic = path.join(monorepoRoot, 'public')
+const rootMiddleware = path.join(monorepoRoot, 'middleware.ts')
+const dashApp = path.join(appRoot, 'app')
+const dashPublic = path.join(appRoot, 'public')
+const dashMiddleware = path.join(appRoot, 'middleware.ts')
+
+function ensureRootNextSurface() {
+  const marker = path.join(rootApp, 'ai-studio')
+  const alreadyReady = fs.existsSync(rootConfig) && fs.existsSync(marker)
+  if (alreadyReady) {
+    console.log('[vercel-build] root Next surface already present')
+    return
+  }
+
+  if (!fs.existsSync(dashApp)) {
+    console.error(`[vercel-build] missing apps/dashboard/app at ${dashApp}`)
+    process.exit(1)
+  }
+
+  console.log('[vercel-build] preparing root Next surface from apps/dashboard')
+  fs.rmSync(rootApp, { recursive: true, force: true })
+  fs.cpSync(dashApp, rootApp, { recursive: true })
+
+  if (fs.existsSync(dashPublic)) {
+    fs.mkdirSync(rootPublic, { recursive: true })
+    fs.cpSync(dashPublic, rootPublic, { recursive: true })
+  }
+
+  if (fs.existsSync(dashMiddleware)) {
+    fs.copyFileSync(dashMiddleware, rootMiddleware)
+  }
+
+  fs.writeFileSync(
+    rootConfig,
+    "export { default } from './apps/dashboard/next.config.mjs'\n",
+  )
+  console.log('[vercel-build] wrote next.config.mjs and flattened app/')
+}
+
+ensureRootNextSurface()
+
 if (!fs.existsSync(rootApp)) {
-  console.error(`[vercel-build] missing root app/ at ${rootApp} — deploy bundle must copy apps/dashboard/app`)
+  console.error(`[vercel-build] missing root app/ at ${rootApp}`)
   process.exit(1)
 }
 if (!fs.existsSync(rootConfig)) {
