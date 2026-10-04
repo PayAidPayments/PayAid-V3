@@ -65,7 +65,51 @@ if (fs.existsSync(path.join(root, 'middleware.ts')) && fs.existsSync(proxyPath))
   fs.rmSync(proxyPath, { force: true })
   console.log('[git-vercel-build] removed root proxy.ts (middleware.ts wins for Voice SSO)')
 }
-fs.writeFileSync(path.join(root, 'next.config.mjs'), "export { default } from './apps/dashboard/next.config.mjs'\n")
+// Wrap dashboard next.config so preview builds can alias `bull` → noop stub.
+// Turbopack fails on bull's fork(master.js); webpack of the full app OOMs on 8GB.
+const bullStubRel = './scripts/stubs/bull-noop.cjs'
+fs.writeFileSync(
+  path.join(root, 'next.config.mjs'),
+  `import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import base from './apps/dashboard/next.config.mjs'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const bullStub = path.join(__dirname, 'scripts/stubs/bull-noop.cjs')
+
+const serverExternalPackages = (base.serverExternalPackages || []).filter((p) => p !== 'bull' && p !== 'ioredis')
+
+/** @type {import('next').NextConfig} */
+const config = {
+  ...base,
+  serverExternalPackages,
+  turbopack: {
+    ...(base.turbopack || {}),
+    resolveAlias: {
+      ...((base.turbopack && base.turbopack.resolveAlias) || {}),
+      '@dashboard': './app',
+      '@dashboard/*': './app/*',
+      '@app': './app',
+      '@app/*': './app/*',
+      '@/*': './*',
+      bull: '${bullStubRel}',
+    },
+  },
+  webpack: (webpackConfig, ctx) => {
+    const nextConfig = typeof base.webpack === 'function' ? base.webpack(webpackConfig, ctx) : webpackConfig
+    nextConfig.resolve = nextConfig.resolve || {}
+    nextConfig.resolve.alias = {
+      ...(nextConfig.resolve.alias || {}),
+      bull: bullStub,
+    }
+    return nextConfig
+  },
+}
+
+export default config
+`
+)
+console.log('[git-vercel-build] wrote next.config.mjs with bull noop alias for preview')
 
 // Root tsconfig maps @dashboard/* → ./apps/dashboard/app/*; after flatten that tree is
 // gone (copied to ./app). Turbopack resolves via tsconfig paths and fails with
@@ -114,7 +158,14 @@ for (const rel of prunePaths) {
 // imports are not implemented yet"). Webpack can externalize bull, but still OOMs if
 // we also compile model-training + instrumentation queue graphs. Drop those surfaces
 // for Git preview builds only.
-const previewPruneAppPaths = ['app/api/ai/models']
+const previewPruneAppPaths = [
+  'app/api/ai/models',
+  // Heavy surfaces not required to validate customer-specialist Flows preview.
+  'app/website-builder-v2',
+  'app/voice-agents',
+  'app/ai-influencer',
+  'app/lead-intelligence',
+]
 for (const rel of previewPruneAppPaths) {
   const full = path.join(root, rel)
   if (!fs.existsSync(full)) continue
@@ -138,14 +189,13 @@ const buildEnv = {
   ...process.env,
   PAYAID_ALLOW_TS_BUILD_ERRORS: '1',
   PAYAID_DISABLE_OPTIMIZE_PACKAGE_IMPORTS: '1',
-  // Webpack: turbopack fails hard on bull fork paths. With sibling-app prune +
-  // instrumentation/models stubs, peak RAM stays under 8GB preview builders.
-  NEXT_BUILD_PREFERRED_MODE: 'webpack',
+  // Turbopack + bull noop stub: avoids webpack 8GB OOM and turbopack bull fork errors.
+  NEXT_BUILD_PREFERRED_MODE: 'turbopack',
   NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=3072',
   NEXT_TELEMETRY_DISABLED: '1',
 }
 
-console.log('[git-vercel-build] invoking vercel-build with NEXT_BUILD_PREFERRED_MODE=webpack')
+console.log('[git-vercel-build] invoking vercel-build with NEXT_BUILD_PREFERRED_MODE=turbopack')
 const result = spawnSync(process.execPath, [path.join(root, 'apps/dashboard/scripts/vercel-build.cjs')], {
   cwd: root,
   stdio: 'inherit',
