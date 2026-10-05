@@ -388,6 +388,8 @@ Board: workspace canvas `ai-runtime-security-board.canvas.tsx`
 
 ## Update log (append-only)
 
+- `2026-10-05` — **NEXUS + customer specialist pack PRODUCTION SHIPPED** — Specialist Phases 1–4 on `main` via PR #32; production Ready at `payaid-v3.vercel.app` after build/proxy hotfixes PRs #33–#37 (flatten, proxy/middleware, import rewrite, UTF-8 helpers, root `/` fix). Did **not** promote slim preview `f8110c9`. Evidence: `docs/evidence/nexus/2026-10-05-production-ship-complete.md`. **Next: tenant-authenticated Flows smoke (Sales follow-up + GST draft + approve/reject); keep approvals draft-only.**
+
 - `2026-10-03` — **Customer orchestrator Phase 4 COMPLETE (thin orchestrator + approval UX)** — Added customer runbook orchestrator (`POST /api/ai/customer-flows/orchestrate`), draft list/approve APIs, handoff audit records, and UI at `/ai-studio/[tenantId]/Flows`. Approvals remain non-executable (no send/file/pay). Check: `npm run check:customer-orchestrator`. Evidence: `docs/evidence/nexus/2026-10-03-phase4-customer-orchestrator-complete.md`.
 
 - `2026-10-03` — **Customer flows Phase 3 COMPLETE (Sales follow-up + GST invoice drafts)** — Added deterministic draft flows + wrapAiRoute APIs: `POST /api/ai/customer-flows/sales-follow-up` and `POST /api/ai/customer-flows/gst-invoice-draft`. Fail-closed entitlements, audit rows, drafts never executable/sent/filed/paid. Checks: `npm run check:customer-flows`. Evidence: `docs/evidence/nexus/2026-10-03-phase3-customer-flows-complete.md`. **Next: Phase 4 thin orchestrator / approval UX if Product prioritizes.**
