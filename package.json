@@ -479,7 +479,8 @@
     "check:customer-flows": "node scripts/check-customer-flows.mjs",
     "smoke:customer-flows": "node node_modules/tsx/dist/cli.mjs scripts/smoke-customer-flows.ts",
     "check:customer-orchestrator": "node scripts/check-customer-orchestrator.mjs",
-    "smoke:customer-orchestrator": "node node_modules/tsx/dist/cli.mjs scripts/smoke-customer-orchestrator.ts"
+    "smoke:customer-orchestrator": "node node_modules/tsx/dist/cli.mjs scripts/smoke-customer-orchestrator.ts",
+    "smoke:customer-flows:hosted": "node scripts/smoke-customer-flows-hosted.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
