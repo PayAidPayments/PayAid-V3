@@ -388,6 +388,8 @@ Board: workspace canvas `ai-runtime-security-board.canvas.tsx`
 
 ## Update log (append-only)
 
+- `2026-10-05` — **P0 production DB restore runbook** — Confirmed Vercel production `DATABASE_URL` points at deleted/unavailable Supabase project ref `ssbzexbhyifpafnvdaxn` (health 503, login 500). Added `docs/PRODUCTION_DATABASE_RESTORE.md` + `scripts/set-vercel-database-url.mjs`. Authenticated Flows smoke remains blocked until a live Postgres URI is set. **Next: operator supplies/creates DB URI → run setter script → migrate/seed → `smoke:customer-flows:hosted`.**
+
 - `2026-10-05` — **Customer Flows hosted smoke BLOCKED by production DB** — Offline checks/smokes PASS (`check:nexus-runbooks`, `check:customer-specialists`, `check:customer-flows`, `check:customer-orchestrator`). Hosted unauth Flows APIs correctly 401. `GET /api/health` 503 and login 500: production `DATABASE_URL` resolves to missing Supabase tenant (`ENOTFOUND`). Added `scripts/smoke-customer-flows-hosted.mjs` (`npm run smoke:customer-flows:hosted`) for re-run after DB restore. Evidence: `docs/evidence/nexus/2026-10-05-customer-flows-hosted-smoke.md`. **Next P0: restore/replace production Postgres + update Vercel `DATABASE_URL`, then re-run hosted Flows smoke.**
 
 - `2026-10-05` — **NEXUS + customer specialist pack PRODUCTION SHIPPED** — Specialist Phases 1–4 on `main` via PR #32; production Ready at `payaid-v3.vercel.app` after build/proxy hotfixes PRs #33–#37 (flatten, proxy/middleware, import rewrite, UTF-8 helpers, root `/` fix). Did **not** promote slim preview `f8110c9`. Evidence: `docs/evidence/nexus/2026-10-05-production-ship-complete.md`. **Next: tenant-authenticated Flows smoke (Sales follow-up + GST draft + approve/reject); keep approvals draft-only.**
