@@ -18,9 +18,10 @@ export async function proxy(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname
 
-    // Ensure root path serves the marketing landing page (rewrite to /landing; _prefix folders are private in Next.js)
+    // Serve apps/dashboard/app/page.tsx at "/". Do not rewrite to /landing —
+    // that route is not present in the flattened dashboard app surface.
     if (pathname === '/') {
-      return NextResponse.rewrite(new URL('/landing', request.url))
+      return NextResponse.next()
     }
 
     // Handle case-insensitive module routes (e.g., /HR -> /hr)
